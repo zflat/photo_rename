@@ -1,0 +1,5 @@
+photo_rename
+-------------
+
+Utility for renaming photo files for better organization. Provides the ability to name files based on a format string. File names can include values taken from photo exif data.
+
