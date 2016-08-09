@@ -5,12 +5,10 @@
 # TODO: move files of extension .CR2 into a subdirectory named CR2
 # (unless inside of that directory...). Maybe have has a command line
 # argument or just do this with all non JPEG files.
-#
-# TODO: better command line for short/long and default to long
+
+
 
 use File::Basename;
-#my $dirname = dirname(__FILE__);
-#BEGIN{push @INC, $dirname;}
 
 #use 5.010;
 use strict;
@@ -28,14 +26,16 @@ my $exifTool = new Image::ExifTool;
 my $pwd = cwd();
 my $short = 0;
 my $long = 0;
+my $length = 'l';
 my $verbose = 0;
 
 Getopt::Long::Configure ('bundling');
 GetOptions (
     's|short' => \$short,
-    'l|long' => \$long,
     'v|verbose' =>\$verbose,
     );
+
+$long  = !$short;
 
 if($short && $long) {
     print "ERROR: Must select short or long format but not both.\n";
