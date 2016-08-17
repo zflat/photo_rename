@@ -9,7 +9,7 @@
 #   cpan PAR:Packer
 #
 # Build binary:
-# pp -o photo_rename.exe photo_rename.pl
+# pp -o photo_rename(.exe) photo_rename.pl
 
 use constant VERSION => "0.1.0";
 use 5.010;
@@ -203,7 +203,7 @@ photo_rename [options]
 
 =item -f B<--format>=[value]
 
-Format as 'short', 'info', or 'long'
+Format as 'short', 'info', 'long', 'canon'
 
 =item B<--serial10>=[value]
 
