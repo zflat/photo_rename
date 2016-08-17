@@ -11,6 +11,7 @@
 # Build binary:
 # pp -o photo_rename.exe photo_rename.pl
 
+use constant VERSION => "0.1.0";
 use 5.010;
 use strict;
 use Getopt::Long;
@@ -23,8 +24,6 @@ use File::Spec;
 use File::Basename;
 use Cwd qw(cwd);
 use Image::ExifTool qw(:Public);
-
-my $version_number = "0.1.0";
 
 my $exifTool    = new Image::ExifTool;
 my $pwd         = cwd();
@@ -54,7 +53,7 @@ GetOptions (
 pod2usage(1) if $showHelp;
 pod2usage(-exitval => 0, -verbose => 2) if $showMan;
 
-print "photo_rename version $version_number\n";
+print "photo_rename version ",VERSION,"\n";
 if(!$format || !length($format)) {
     print "No action to perform without format option.\n";
     print "For more information:\n\t--help\n\t\tHelp text\n\t--man\n\t\tThe manual\n";
@@ -118,35 +117,31 @@ while (my $file = readdir(DIR)) {
             .encode_base36($parts_date[2])
             ;
         my $secSerialStr = encode_base36($secondsTotal.substr($strIdInfo, -4), 6);
-        my $longName = $dateStr
+
+        my %formatName;
+        $formatName{'long'} = $dateStr
             .'-'.$secSerialStr
             .'-'.encode_base36($fileNumber =~ s/[^0-9]+//r)
             ;
-        $longName = lc($longName);
+        $formatName{'long'} = lc($formatName{'long'});
 
-        my $shortName = $shortDateStr
+        $formatName{'short'} = $shortDateStr
             .'-'.encode_base36($fileNumber =~ s/[^0-9]+//r)
             .(length($desc)  ? '_'.$desc : '')
             ;
-        $shortName = lc($shortName);
+        $formatName{'short'} = lc($formatName{'short'});
 
-        my $infoName = encode_base36(substr($strIdInfo, -4), 3)
+        $formatName{'info'} = encode_base36(substr($strIdInfo, -4), 3)
             .'-'.$dateStr
             .'-'.encode_base36($secondsTotal, 6)
             .'-'.encode_base36($fileNumber =~ s/[^0-9]+//r)
             .'-'.($fileNumber =~ s/[_]+//r)
             .((length($desc)) ? '_'.$desc : '')
             ;
-        $infoName = lc($infoName);
+        $formatName{'info'} = lc($formatName{'info'});
+        $formatName{'canon'} = 'IMG_'.substr($fileNumber, -4);
 
-        my $newName = $file;
-        if($format eq "short") {
-            $newName = $shortName;
-        } elsif($format eq "info") {
-            $newName = $infoName;
-        } elsif($format eq "long") {
-            $newName = $longName;
-        }
+        my $newName = defined $formatName{$format} ? $formatName{$format} : $baseName;
         my $subDir = "";
         foreach my $ext (@organizeExt) {
             if(lc($extension) eq '.'.lc($ext)) {
@@ -162,7 +157,7 @@ while (my $file = readdir(DIR)) {
         }
 
         my $currPath = File::Spec->catdir($pwd, $file);
-        my $newPath = File::Spec->catdir($pwd, $subDir, $newName).$extension;
+        my $newPath  = File::Spec->catdir($pwd, $subDir, $newName).$extension;
 
         if($verbose) {
             print "$currPath\n";
