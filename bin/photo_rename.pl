@@ -28,8 +28,10 @@ use Math::Base36 ':all';
 use File::Copy;
 use File::Spec;
 use File::Basename;
+use File::HomeDir;
 use Cwd qw(cwd);
 use Image::ExifTool qw(:Public);
+use Log::Log4perl qw(get_logger);
 
 my $exifTool    = new Image::ExifTool;
 my $pwd         = cwd();
@@ -44,6 +46,25 @@ my $argOrganize = "";
 my $descArg     = "";
 my $serialArg10 = "";
 my $serialArg36 = "";
+
+my $dataDir = File::Spec->catdir(File::HomeDir->my_data, 'photo_rename');
+if(!-d $dataDir) {
+    mkdir $dataDir or die "Failed to create path: $dataDir";
+}
+my $logPath = File::Spec->catdir($dataDir, 'photo_rename.log');
+my %log_config = (
+    "log4perl.category.PhotoRename"                      => "INFO",
+    "log4perl.rootLogger"                                => "ERROR, LOGFILE",
+    "log4perl.appender.LOGFILE"                          => "Log::Log4perl::Appender::File",
+    "log4perl.appender.LOGFILE"                          => "Log::Log4perl::Appender::File",
+    "log4perl.appender.LOGFILE.filename"                 => $logPath,
+    "log4perl.appender.LOGFILE.mode"                     => "append",
+    "log4perl.appender.LOGFILE.layout"                   =>"PatternLayout",
+    "log4perl.appender.LOGFILE.layout.ConversionPattern" =>"%F:%L %c %d - %m%n",
+    );
+
+Log::Log4perl->init( \%log_config);
+my $log = Log::Log4perl->get_logger("PhotoRename");
 
 Getopt::Long::Configure ('bundling');
 GetOptions (
@@ -60,6 +81,8 @@ pod2usage(1) if $showHelp;
 pod2usage(-exitval => 0, -verbose => 2) if $showMan;
 
 print "photo_rename version ",VERSION,"\n";
+print "Logging output to $logPath\n";
+
 if(!$format || !length($format)) {
     print "No action to perform without format option.\n";
     print "For more information:\n\t--help\n\t\tHelp text\n\t--man\n\t\tThe manual\n";
@@ -77,6 +100,8 @@ my $count_skip    = 0;
 my $count_ignore  = 0;
 
 opendir (DIR, $pwd) or die $!;
+
+$log->info("Running in current directory: $pwd, selected format: $format");
 
 while (my $file = readdir(DIR)) {
     my $fileNumber = "" ;
@@ -166,21 +191,25 @@ while (my $file = readdir(DIR)) {
         my $newPath  = File::Spec->catdir($pwd, $subDir, $newName).$extension;
 
         if($verbose) {
-            print "$currPath\n";
-            print $newPath, "\n";
-            print "\n";
+            print "$currPath => $newPath\n";
         }
+        $log->info("$currPath => $newPath");
 
         if($currPath eq $newPath) {
+            if($verbose) {
+                warn("$currPath skipped");
+            }
+            $log->warn("$currPath skipped");
             $count_skip++;
         } elsif (move($currPath, $newPath)) {
             $count_success++;
         } else {
-            print "Could not rename file ".$currPath,"\n";
+            warn("Could not rename file ".$currPath);
+            $log->warn("Could not rename file ".$currPath);
             $count_fail++;
         }
     } elsif ( $hasEXIF) {
-        print "Ignoring file $file due to incomplete exif data.\n";
+        $log->logwarn("Ignoring file $file due to incomplete exif data.");
         $count_ignore++;
     }
 }
