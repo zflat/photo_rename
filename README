@@ -12,6 +12,7 @@ Utility for renaming photo files with easy to organize file names.
  * Allows for manual entry of the camera serial number in when it can not be obtained from the image file
  * Organizing files to subdirectories based on extension
  * Batch adding desciption suffix to file names
+ * Logging script execution to user data directory
 
 ## Usage
 
@@ -32,7 +33,7 @@ Get the description of available options
 
 ### Runtime:
 
-      cpan Image::ExifTool Math::Base36 Log::Log4perl File::HomeDir
+      cpan Image::ExifTool Math::Base36 Log::Log4perl File::HomeDir Logfile::Rotate
 
 ### Development:
 

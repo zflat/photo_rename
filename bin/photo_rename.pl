@@ -32,6 +32,9 @@ use File::HomeDir;
 use Cwd qw(cwd);
 use Image::ExifTool qw(:Public);
 use Log::Log4perl qw(get_logger);
+use Logfile::Rotate;
+use FindBin;
+use lib "$FindBin::RealBin/../lib";
 
 my $exifTool    = new Image::ExifTool;
 my $pwd         = cwd();
@@ -42,6 +45,7 @@ my $format      = 0;
 my $verbose     = 0;
 my $showHelp    = 0;
 my $showMan     = 0;
+my $showAbout   = 0;
 my $argOrganize = "";
 my $descArg     = "";
 my $serialArg10 = "";
@@ -51,7 +55,18 @@ my $dataDir = File::Spec->catdir(File::HomeDir->my_data, 'photo_rename');
 if(!-d $dataDir) {
     mkdir $dataDir or die "Failed to create path: $dataDir";
 }
-my $logPath = File::Spec->catdir($dataDir, 'photo_rename.log');
+
+my $logPath = File::Spec->catdir($dataDir, "photo_rename.log");
+my @logStat = stat $logPath;
+if($logStat[7] > 1e6) {
+    my $logRotor = new Logfile::Rotate(
+        File   => $logPath,
+        Count  => 100,
+        Gzip  => 'lib',
+        );
+    $logRotor->rotate();
+}
+
 my %log_config = (
     "log4perl.category.PhotoRename"                      => "INFO",
     "log4perl.rootLogger"                                => "ERROR, LOGFILE",
@@ -74,18 +89,31 @@ GetOptions (
     'v|verbose'       => \$verbose,
     '-h|help'         => \$showHelp,
     'man'             => \$showMan,
+    'about'           => \$showAbout,
     'd|description=s'	=> \$descArg,
     'o|organize=s'    => \$argOrganize,
     ) or pod2usage(2);
+
+if($showAbout) {
+    print "photo_rename  Copyright (C) 2016  William Wedler\n";
+    print "This program comes with ABSOLUTELY NO WARRANTY;\n";
+    print "This is free software, and you are welcome to redistribute it\n";
+    print "under certain the conditions of the GPLv3 license;\n\n";
+    print "photo_rename version ",VERSION,"\n";
+    print "Logging path: $logPath\n";
+    print "Realbin path: $FindBin::RealBin\n";
+}
+
 pod2usage(1) if $showHelp;
 pod2usage(-exitval => 0, -verbose => 2) if $showMan;
 
-print "photo_rename version ",VERSION,"\n";
-print "Logging output to $logPath\n";
 
 if(!$format || !length($format)) {
     print "No action to perform without format option.\n";
-    print "For more information:\n\t--help\n\t\tHelp text\n\t--man\n\t\tThe manual\n";
+    print "Available options for more information:\n",
+    "\t--help\t\tHelp text\n",
+    "\t--man\t\tThe manual\n",
+    "\t--about\t\tProgram information\n";
     exit 1;
 }
 
@@ -267,6 +295,11 @@ Print a brief help message and exits.
 =item B<--man>
 
 Prints the manual page and exits.
+
+
+=item B<--about>
+
+Prints information about the program including version number and copywrite.
 
 =back
 
