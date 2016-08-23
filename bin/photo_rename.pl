@@ -306,4 +306,66 @@ Prints information about the program including version number and copywrite.
 
 Rename photos in the current working directory with new file names based on exif data. Photo files can have a description appended to their file names and can be moved to a folder based on file extension if those options are selected.
 
+
+=head2 Formats
+
+=head3 long
+
+                          YYYYMMDD-xxxxxx-nnnn.ext
+                          \__/|/|/ \____/ \__/ \_/
+                    Year __|  | |   |      |    |
+                   Month _____| |   |      |    |
+                     Day _______|   |      |    |
+Combined time and serial ___________|      |    |
+number (base 36 encoded)                   |    |
+   File number (base 36) __________________|    |
+               Extension _______________________|
+
+=head3 short
+
+                         YYmd-ffff_*.ext
+                         |/|| \__/\| \_/
+                 Year ___| ||  |   |  | 
+      Month (base 36) _____||  |   |  |
+        Day (base 36) ______|  |   |  |
+File number (base 36) _________|   |  |
+ Optional description _____________|  |
+            Extension ________________|
+
+
+=head3 info
+
+        sss-YYYYMMDD-tttttt-ffff-FFFF_*.ext
+        \_/ \__/|/|/ \____/ \__/ \__/\| \_/
+Serial __|   |  | |    |     |    |   |  |
+             |  | |    |     |    |   |  |
+  Year ______|  | |    |     |    |   |  |
+ Month _________| |    |     |    |   |  |
+   Day ___________|    |     |    |   |  |
+                       |     |    |   |  |
+Time   ________________|     |    |   |  |
+(sec)                        |    |   |  |
+                             |    |   |  |
+File   ______________________|    |   |  |
+num.                              |   |  |
+(b36)                             |   |  | 
+                                  |   |  |
+File   ___________________________|   |  |
+num.                                  |  |
+                                      |  |
+Opt.   _______________________________|  |
+desc.                                    |
+                                         |
+Extn. ___________________________________|
+
+=head3 canon
+
+                 IMG_nnnn_*.ext
+                 \__/\__/|/ \_/
+                  |   |  |   |
+         Prefix __|   |  |   |
+   Image number ______|  |   |
+     Opt. desc. _________|   |
+      Extension _____________|
+
 =cut
