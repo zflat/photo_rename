@@ -99,17 +99,17 @@ if($showAbout) {
     print "This program comes with ABSOLUTELY NO WARRANTY;\n";
     print "This is free software, and you are welcome to redistribute it\n";
     print "under certain the conditions of the GPLv3 license;\n\n";
-    print "photo_rename version ",VERSION,"\n";
+    print "Version ",VERSION,"\n";
     print "Logging path: $logPath\n";
     print "Realbin path: $FindBin::RealBin\n";
+    exit(0);
 }
 
 pod2usage(1) if $showHelp;
 pod2usage(-exitval => 0, -verbose => 2) if $showMan;
 
-
 if(!$format || !length($format)) {
-    print "No action to perform without format option.\n";
+    print "No action to perform because the required --format option was not given\n";
     print "Available options for more information:\n",
     "\t--help\t\tHelp text\n",
     "\t--man\t\tThe manual\n",
@@ -251,10 +251,9 @@ print "Files Ignored  : ".$count_ignore,"\n";
 print $n_files." files scanned in total\n";
 
 __END__
-
 =head1 NAME
 
-photo_rename - rename photos using exiftool data
+photo_rename - rename photos for organizing and archiving
 
 =head1 SYNOPSIS
 
@@ -305,6 +304,6 @@ Prints information about the program including version number and copywrite.
 
 =head1 DESCRIPTION
 
-Utility to rename photos in a directory based on exifdata and optionally add description and move to a folder based on file extension.
+Rename photos in the current working directory with new file names based on exif data. Photo files can have a description appended to their file names and can be moved to a folder based on file extension if those options are selected.
 
 =cut
