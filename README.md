@@ -33,7 +33,7 @@ Get the description of available options
 
 ### Runtime:
 
-      cpan Image::ExifTool Math::Base36 Log::Log4perl File::HomeDir Logfile::Rotate
+      cpan Image::ExifTool Math::Base36 Log::Log4perl File::HomeDir
 
 ### Development:
 

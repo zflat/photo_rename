@@ -32,7 +32,6 @@ use File::HomeDir;
 use Cwd qw(cwd);
 use Image::ExifTool qw(:Public);
 use Log::Log4perl qw(get_logger);
-use Logfile::Rotate;
 use FindBin;
 use lib "$FindBin::RealBin/../lib";
 
@@ -56,15 +55,51 @@ if(!-d $dataDir) {
     mkdir $dataDir or die "Failed to create path: $dataDir";
 }
 
-my $logPath = File::Spec->catdir($dataDir, "photo_rename.log");
+my $logName = "photo_rename";
+my $logPath = File::Spec->catdir($dataDir, "$logName.log");
 my @logStat = stat $logPath;
 if($logStat[7] > 1e6) {
-    my $logRotor = new Logfile::Rotate(
-        File   => $logPath,
-        Count  => 100,
-        Gzip  => 'lib',
+    # Current log file is too large
+
+    my $minLogN;
+    my $maxLogN;
+    my $logCount = 0;
+    # Get the min and max log number and count of log files
+    opendir (DIR, $dataDir) or die $!;
+    while (my $file = readdir(DIR)) {
+        my ($logBase, $logDir, $logExt) = fileparse($file, qr/\.[^.]*$/);
+        my $atFront = index $logBase, $logName;
+        if($atFront == 0) {
+            my $logN = substr($logBase, length($logName));
+            if(length($logN)) {
+                $logCount++;
+                $logN = $logN+0;
+                if(!$minLogN || $minLogN>$logN) {
+                    $minLogN = $logN;
+                }
+                if(!$maxLogN || $maxLogN<$logN) {
+                    $maxLogN = $logN;
+                }
+            }
+        }
+    }
+
+    if($logCount > 100) {
+        # Too many old log files so remove the oldest log
+        unlink File::Spec->catdir(
+            $dataDir, 
+            "$logName$minLogN.log"
+            );
+    }
+    # move the current log to the next available number
+    my $nextLogN = $maxLogN+1;
+    move(File::Spec->catdir(
+             $dataDir, 
+             "$logName.log"),
+         File::Spec->catdir(
+             $dataDir, 
+             "$logName$nextLogN.log"),
         );
-    $logRotor->rotate();
 }
 
 my %log_config = (
