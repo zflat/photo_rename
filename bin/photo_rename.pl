@@ -24,6 +24,7 @@ use Getopt::Long;
 use Pod::Usage;
 use warnings;
 use DateTime;
+use Time::Piece;
 use Math::Fleximal;
 use File::Copy;
 use File::Spec;
@@ -149,7 +150,7 @@ if($showAbout) {
     print "photo_rename  Copyright (C) 2016  William Wedler\n";
     print "This program comes with ABSOLUTELY NO WARRANTY;\n";
     print "This is free software, and you are welcome to redistribute it\n";
-    print "under certain the conditions of the GPLv3 license;\n\n";
+    print "under certain the conditions of the GPLv3 license;\n";
     print "Version ",VERSION,"\n";
     print "Logging path: $logPath\n";
     print "Realbin path: $FindBin::RealBin\n";
@@ -211,7 +212,6 @@ while (my $file = readdir(DIR)) {
         if($desc_index > 0 ) {
             $desc = substr($baseName, $desc_index+1);
         }
-
         my @partsTaken = split(' ', $taken);
         my @parts_date = split(':', $partsTaken[0]);
         my @parts_time = split(':', $partsTaken[1]);
@@ -222,10 +222,9 @@ while (my $file = readdir(DIR)) {
             + $parts_time[2];
         # reformat the date portion of the string
         my $dateStr = join("", @parts_date);
-        # TODO: shortDateStr as YYddd were ddd is base 36 encoded day of the year
+        my $takenTime = Time::Piece->strptime($taken, "%Y:%m:%d  %T");
         my $shortDateStr = substr($parts_date[0], -2)
-            .encode_base26($parts_date[1])
-            .$parts_date[2]#.encode_base26($parts_date[2])
+            .encode_base26($takenTime->yday, 3)
             ;
         my $secSerialStr = encode_base26($secondsTotal.substr($strIdInfo, -4), 7);
 
@@ -375,14 +374,14 @@ number (base 26 encoded)                     |    |
 
 =head3 short
 
-                         YYmd-fffff_*.ext
-                         |/|| \___/\| \_/
-                 Year ___| ||   |   |  | 
-      Month (base 26) _____||   |   |  |
-                  Day ______|   |   |  |
-File number (base 26) __________|   |  |
- Optional description ______________|  |
-            Extension _________________|
+                         YYddd-fffff_*.ext
+                         |/\_/ \___/\| \_/
+                 Year ___|  |    |   |  |
+           Day of the ______|    |   |  |
+       year (base 26)            |   |  |
+File number (base 26) ___________|   |  |
+ Optional description _______________|  |
+            Extension __________________|
 
 
 =head3 info
