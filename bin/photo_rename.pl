@@ -24,7 +24,7 @@ use Getopt::Long;
 use Pod::Usage;
 use warnings;
 use DateTime;
-use Math::Base36 ':all';
+use Math::Fleximal;
 use File::Copy;
 use File::Spec;
 use File::Basename;
@@ -34,6 +34,22 @@ use Image::ExifTool qw(:Public);
 use Log::Log4perl qw(get_logger);
 use FindBin;
 use lib "$FindBin::RealBin/../lib";
+
+sub encode_base26 {
+    my ($val, $padding) = @_;
+    my $num = new Math::Fleximal($val, [0..9]);
+    my $retVal = $num->change_flex(["A".."Z"])->to_str();
+    $padding = $padding - length($retVal) if defined $padding;
+    $retVal = '0' x $padding . $retVal if defined $padding && $padding > 0;
+    return $retVal;
+}
+
+sub decode_base26 {
+    my $val = uc(shift);
+    my $num = new Math::Fleximal($val, ["A".."Z"]);
+    my $retVal = $num->change_flex([0..9])->to_str();
+    return $retVal;
+}
 
 my $exifTool    = new Image::ExifTool;
 my $pwd         = cwd();
@@ -48,7 +64,7 @@ my $showAbout   = 0;
 my $argOrganize = "";
 my $descArg     = "";
 my $serialArg10 = "";
-my $serialArg36 = "";
+my $serialArg26 = "";
 
 my $dataDir = File::Spec->catdir(File::HomeDir->my_data, 'photo_rename');
 if(!-d $dataDir) {
@@ -120,7 +136,7 @@ Getopt::Long::Configure ('bundling');
 GetOptions (
     'f|format=s'      => \$format,
     'serial10=s'      => \$serialArg10,
-    'serial36=s'      => \$serialArg36,
+    'serial26=s'      => \$serialArg26,
     'v|verbose'       => \$verbose,
     '-h|help'         => \$showHelp,
     'man'             => \$showMan,
@@ -152,8 +168,8 @@ if(!$format || !length($format)) {
     exit 1;
 }
 
-if(length($serialArg36)) {
-    $serialArg10 = decode_base36($serialArg36);
+if(length($serialArg26)) {
+    $serialArg10 = decode_base26($serialArg26);
 }
 
 my @organizeExt   = split(',', $argOrganize);
@@ -181,7 +197,7 @@ while (my $file = readdir(DIR)) {
             $strIdInfo = $serial;
         } elsif (length($serialArg10)) {
             $strIdInfo = $serialArg10;
-        }  
+        }
     }
     my $hasEXIF = length($taken);
     if( $hasEXIF && length($fileNumber) && length($strIdInfo)) {
@@ -206,33 +222,34 @@ while (my $file = readdir(DIR)) {
             + $parts_time[2];
         # reformat the date portion of the string
         my $dateStr = join("", @parts_date);
+        # TODO: shortDateStr as YYddd were ddd is base 36 encoded day of the year
         my $shortDateStr = substr($parts_date[0], -2)
-            .encode_base36($parts_date[1])
-            .encode_base36($parts_date[2])
+            .encode_base26($parts_date[1])
+            .$parts_date[2]#.encode_base26($parts_date[2])
             ;
-        my $secSerialStr = encode_base36($secondsTotal.substr($strIdInfo, -4), 6);
+        my $secSerialStr = encode_base26($secondsTotal.substr($strIdInfo, -4), 7);
 
         my %formatName;
         $formatName{'long'} = $dateStr
             .'-'.$secSerialStr
-            .'-'.encode_base36($fileNumber =~ s/[^0-9]+//r)
+            .'-'.encode_base26($fileNumber =~ s/[^0-9]+//r)
             ;
-        $formatName{'long'} = lc($formatName{'long'});
+        $formatName{'long'} = $formatName{'long'};
 
         $formatName{'short'} = $shortDateStr
-            .'-'.encode_base36($fileNumber =~ s/[^0-9]+//r)
+            .'-'.encode_base26($fileNumber =~ s/[^0-9]+//r)
             .(length($desc)  ? '_'.$desc : '')
             ;
-        $formatName{'short'} = lc($formatName{'short'});
+        $formatName{'short'} = $formatName{'short'};
 
-        $formatName{'info'} = encode_base36(substr($strIdInfo, -4), 3)
+        $formatName{'info'} = encode_base26(substr($strIdInfo, -4), 3)
             .'-'.$dateStr
-            .'-'.encode_base36($secondsTotal, 6)
-            .'-'.encode_base36($fileNumber =~ s/[^0-9]+//r)
+            .'-'.encode_base26($secondsTotal, 4)
+            .'-'.encode_base26($fileNumber =~ s/[^0-9]+//r)
             .'-'.($fileNumber =~ s/[_]+//r)
             .((length($desc)) ? '_'.$desc : '')
             ;
-        $formatName{'info'} = lc($formatName{'info'});
+        $formatName{'info'} = $formatName{'info'};
         $formatName{'canon'} = 'IMG_'.substr($fileNumber, -4);
 
         my $newName = defined $formatName{$format} ? $formatName{$format} : $baseName;
@@ -306,9 +323,9 @@ Format as 'short', 'info', 'long', 'canon'
 
 Manually specify camera serial number containing digits 0-9 only (base 10 encoding).
 
-=item B<--serial36>=[value]
+=item B<--serial26>=[value]
 
-Manually specify camera serial number containing letters and numbers (base 36 encoding).
+Manually specify camera serial number containing letters and numbers (base 26 encoding).
 
 =item -d B<--description>=[value]
 
@@ -346,52 +363,52 @@ Rename photos in the current working directory with new file names based on exif
 
 =head3 long
 
-                          YYYYMMDD-xxxxxx-nnnn.ext
-                          \__/|/|/ \____/ \__/ \_/
-                    Year __|  | |   |      |    |
-                   Month _____| |   |      |    |
-                     Day _______|   |      |    |
-Combined time and serial ___________|      |    |
-number (base 36 encoded)                   |    |
-   File number (base 36) __________________|    |
-               Extension _______________________|
+                          YYYYMMDD-xxxxxxx-nnnnn.ext
+                          \__/|/|/ \_____/ \___/ \_/
+                    Year __|  | |    |       |    |
+                   Month _____| |    |       |    |
+                     Day _______|    |       |    |
+Combined time and serial ____________|       |    |
+number (base 26 encoded)                     |    |
+   File number (base 26) ____________________|    |
+               Extension _________________________|
 
 =head3 short
 
-                         YYmd-ffff_*.ext
-                         |/|| \__/\| \_/
-                 Year ___| ||  |   |  | 
-      Month (base 36) _____||  |   |  |
-        Day (base 36) ______|  |   |  |
-File number (base 36) _________|   |  |
- Optional description _____________|  |
-            Extension ________________|
+                         YYmd-fffff_*.ext
+                         |/|| \___/\| \_/
+                 Year ___| ||   |   |  | 
+      Month (base 26) _____||   |   |  |
+                  Day ______|   |   |  |
+File number (base 26) __________|   |  |
+ Optional description ______________|  |
+            Extension _________________|
 
 
 =head3 info
 
-        sss-YYYYMMDD-tttttt-ffff-FFFF_*.ext
-        \_/ \__/|/|/ \____/ \__/ \__/\| \_/
-Serial __|   |  | |    |     |    |   |  |
-             |  | |    |     |    |   |  |
-  Year ______|  | |    |     |    |   |  |
- Month _________| |    |     |    |   |  |
-   Day ___________|    |     |    |   |  |
-                       |     |    |   |  |
-Time   ________________|     |    |   |  |
-(sec)                        |    |   |  |
-                             |    |   |  |
-File   ______________________|    |   |  |
-num.                              |   |  |
-(b36)                             |   |  | 
-                                  |   |  |
-File   ___________________________|   |  |
-num.                                  |  |
-                                      |  |
-Opt.   _______________________________|  |
-desc.                                    |
-                                         |
-Extn. ___________________________________|
+        sss-YYYYMMDD-tttt-ffff-FFFF_*.ext
+        \_/ \__/|/|/ \__/ \__/ \__/\| \_/
+Serial __|   |  | |   |    |    |   |  |
+             |  | |   |    |    |   |  |
+  Year ______|  | |   |    |    |   |  |
+ Month _________| |   |    |    |   |  |
+   Day ___________|   |    |    |   |  |
+                      |    |    |   |  |
+Time     _____________|    |    |   |  |
+(sec b26)                  |    |   |  |
+                           |    |   |  |
+File   ____________________|    |   |  |
+num.                            |   |  |
+(b26)                           |   |  | 
+                                |   |  |
+File   _________________________|   |  |
+num.                                |  |
+                                    |  |
+Opt.   _____________________________|  |
+desc.                                  |
+                                       |
+Extn. _________________________________|
 
 =head3 canon
 
