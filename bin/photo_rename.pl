@@ -38,7 +38,7 @@ use lib "$FindBin::RealBin/../lib";
 
 sub encode_base26 {
     my ($val, $padding) = @_;
-    my $num = new Math::Fleximal($val, [0..9]);
+    my $num = new Math::Fleximal($val, [0..9]); 
     my $retVal = $num->change_flex(["A".."Z"])->to_str();
     $padding = $padding - length($retVal) if defined $padding;
     $retVal = '0' x $padding . $retVal if defined $padding && $padding > 0;
@@ -184,13 +184,18 @@ opendir (DIR, $pwd) or die $!;
 $log->info("Running in current directory: $pwd, selected format: $format");
 
 while (my $file = readdir(DIR)) {
-    my $fileNumber = "" ;
-    my $serial     = "" ;
-    my $taken      = "" ;
-    my $imageID    = "" ;
-    my $strIdInfo  = "" ;
+    my ($baseName, $parentDir, $extension) = fileparse($file, qr/\.[^.]*$/);
+    my $fileNumber = "";
+    my $docName    = "";
+    my $serial     = "";
+    my $taken      = "";
+    my $imageID    = "";
+    my $strIdInfo  = "";
+    my $strFileNum = "";
+        
     if($exifTool->ExtractInfo("$file") == 1) {
         $fileNumber = $exifTool->GetValue('FileNumber');
+        $docName    =  $exifTool->GetValue('DocumentName');
         $serial     = $exifTool->GetValue('SerialNumber');
         $taken      = $exifTool->GetValue('DateTimeOriginal');
 
@@ -201,9 +206,36 @@ while (my $file = readdir(DIR)) {
         }
     }
     my $hasEXIF = length($taken);
-    if( $hasEXIF && length($fileNumber) && length($strIdInfo)) {
-        my ($baseName, $parentDir, $extension) = fileparse($file, qr/\.[^.]*$/);
+    if($hasEXIF) {
+        if($verbose) {
+            print "docName: $docName\n" if defined $docName;
+        }
+        if(!defined $docName || !length($docName)) {
+            if($verbose) {
+                print "Setting DocumentName:$file\n";
+            }
+            $log->info("Setting DocumentName:$file");
+            my $success = $exifTool->SetNewValue('DocumentName', $baseName);
+            $success = $exifTool->WriteInfo($file);
+            if($success) {
+                $docName = $baseName;
+            }
+        }
+        if(defined $fileNumber && length($fileNumber)) {
+            $strFileNum = $fileNumber;
+        } elsif(defined $docName && length($docName)) {
+            $strFileNum = ($docName =~ s/[^0-9]+//r);
+            # Give the fileNumber a prefix so that it
+            # is at least 7 digits in length
+            my $pre = 7-length($strFileNum);
+            if($pre > 0) {
+                $pre = 10**($pre-1);
+                $strFileNum = $pre.$strFileNum;
+            }
+        }
+    }
 
+    if( $hasEXIF && length($strFileNum) && length($strIdInfo)) {
         my $desc = (length($descArg) > 0) ? $descArg : "";
         my $desc_index = index($baseName, "_", 0);
         if($desc_index < 8) {
@@ -231,25 +263,27 @@ while (my $file = readdir(DIR)) {
         my %formatName;
         $formatName{'long'} = $dateStr
             .'-'.$secSerialStr
-            .'-'.encode_base26($fileNumber =~ s/[^0-9]+//r)
+            .'-'.encode_base26($strFileNum =~ s/[^0-9]+//r)
             ;
         $formatName{'long'} = $formatName{'long'};
 
         $formatName{'short'} = $shortDateStr
-            .'-'.encode_base26($fileNumber =~ s/[^0-9]+//r)
+            .'-'.encode_base26($strFileNum =~ s/[^0-9]+//r)
             .(length($desc)  ? '_'.$desc : '')
             ;
         $formatName{'short'} = $formatName{'short'};
-
+        my $infoFileNum = (defined $fileNumber && length($fileNumber))
+            ? $fileNumber
+            : (substr($strFileNum, -1*length($docName =~ s/[^0-9]+//r)) =~ s/[_]+//r);
         $formatName{'info'} = encode_base26(substr($strIdInfo, -4), 3)
             .'-'.$dateStr
             .'-'.encode_base26($secondsTotal, 4)
-            .'-'.encode_base26($fileNumber =~ s/[^0-9]+//r)
-            .'-'.($fileNumber =~ s/[_]+//r)
+            .'-'.encode_base26($strFileNum =~ s/[^0-9]+//r)
+            .'-'.$infoFileNum
             .((length($desc)) ? '_'.$desc : '')
             ;
         $formatName{'info'} = $formatName{'info'};
-        $formatName{'canon'} = 'IMG_'.substr($fileNumber, -4);
+        $formatName{'canon'} = 'IMG_'.substr($strFileNum, -4);
 
         my $newName = defined $formatName{$format} ? $formatName{$format} : $baseName;
         my $subDir = "";
