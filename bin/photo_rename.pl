@@ -195,7 +195,7 @@ while (my $file = readdir(DIR)) {
         
     if($exifTool->ExtractInfo("$file") == 1) {
         $fileNumber = $exifTool->GetValue('FileNumber');
-        $docName    =  $exifTool->GetValue('DocumentName');
+        $docName    = $exifTool->GetValue('DocumentName');
         $serial     = $exifTool->GetValue('SerialNumber');
         $taken      = $exifTool->GetValue('DateTimeOriginal');
 
@@ -317,8 +317,7 @@ while (my $file = readdir(DIR)) {
         } elsif (move($currPath, $newPath)) {
             $count_success++;
         } else {
-            warn("Could not rename file ".$currPath);
-            $log->warn("Could not rename file ".$currPath);
+            $log->logwarn("Could not rename file ".$currPath);
             $count_fail++;
         }
     } elsif ( $hasEXIF) {
