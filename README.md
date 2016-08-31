@@ -33,7 +33,7 @@ Get the description of available options
 
 ### Runtime:
 
-      cpan Image::ExifTool Math::Base36 Log::Log4perl File::HomeDir
+      cpan File::HomeDir Image::ExifTool Log::Log4perl Math::Fleximal Time::Piece
 
 ### Development:
 
