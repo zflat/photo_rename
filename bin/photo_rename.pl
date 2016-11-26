@@ -332,7 +332,15 @@ while (my $file = readdir(DIR)) {
 }
 closedir(DIR);
 
-foreach my $f (@photoFiles) {
+my $n_photos = scalar(@photoFiles);
+my $progress = Term::ProgressBar->new({name => 'Renaming photos',
+                                       count => $n_photos,
+                                       ETA => 'linear',
+                                      });
+$progress->max_update_rate(1);
+my $next_update = 0;
+for(my $i=0; $i<$n_photos; $i++) {
+    my $f = $photoFiles[$i];
     my $hasEXIF = length($f->{"taken"});
     my $currPath = File::Spec->catdir($pwd, $f->{"file"});
     if($hasEXIF && length($f->{"strFileNum"}) && length($f->{"strIdInfo"})) {
@@ -347,7 +355,7 @@ foreach my $f (@photoFiles) {
             );
         $log->info("$currPath => $newPath");
         if($result == 0) {
-                    if($verbose) {
+            if($verbose) {
                 warn("$currPath skipped");
             }
             $log->warn("$currPath skipped");
@@ -355,21 +363,25 @@ foreach my $f (@photoFiles) {
         } elsif ($result > 0) {
             $count_success++;
         } else {
-           $log->logwarn("Could not rename file ".$currPath);
+            $log->logwarn("Could not rename file ".$currPath);
             $count_fail++;
         }
     } elsif ( $hasEXIF) {
         $log->logwarn("Ignoring file ".$f->{"file"}." due to incomplete exif data.");
         $count_ignore++;
     }
-}
 
+    $next_update = $progress->update($i) if $i > $next_update;
+}
+$progress->update($n_photos) if $n_photos >= $next_update;
 my $n_files = $count_success+$count_fail+$count_skip;
 print "Files Renamed  : ".$count_success,"\n";
 print "Files Skipped  : ".$count_skip,"\n";
 print "Files Failed   : ".$count_fail,"\n";
 print "Files Ignored  : ".$count_ignore,"\n";
-print $n_files." photo files scanned in total\n";
+print "------------------\n";
+print "Photos Total   : ".$n_files,"\n";
+
 
 __END__
 =head1 NAME
