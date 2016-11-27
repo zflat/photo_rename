@@ -17,9 +17,10 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-use constant VERSION => "0.1.0";
-use 5.010;
+use constant VERSION => "0.2.0";
+use 5.022;
 use strict;
+use arybase;
 use Getopt::Long;
 use Pod::Usage;
 use warnings;

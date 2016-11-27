@@ -37,12 +37,13 @@ Get the description of available options
 
 ### Development:
 
-      cpan PAR:Packer
+      cpan PAR::Packer
 
 
 ## Package for distribution:
 
       pp -o photo_rename(.exe) photo_rename.pl
+
 
 ## Contributing
 
