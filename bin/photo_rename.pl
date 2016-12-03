@@ -70,85 +70,85 @@ my $serialArg10 = "";
 my $serialArg26 = "";
 
 sub renamePhoto {
-    my ($f, $pwd, $format, $organizeExt, $descArg, $serialArg10, $serialArg26) = @_;
+    my ($f, $pwd, $format, @orgExt, $descArg, $serialArg10, $serialArg26) = @_;
     my $desc = (length($descArg) > 0) ? $descArg : "";
-        my $desc_index = index($f->{"baseName"}, "_", 0);
-        if($desc_index < 8) {
-            $desc_index = index($f->{"baseName"}, "_", $desc_index+1);
+    my $desc_index = index($f->{"baseName"}, "_", 0);
+    if($desc_index < 8) {
+        $desc_index = index($f->{"baseName"}, "_", $desc_index+1);
+    }
+    if($desc_index > 0 ) {
+        $desc = substr($f->{"baseName"}, $desc_index+1);
+    }
+    my @partsTaken = split(' ', $f->{"taken"});
+    my @parts_date = split(':', $partsTaken[0]);
+    my @parts_time = split(':', $partsTaken[1]);
+
+    # convert hours and min to seconds
+    my $secondsTotal = $parts_time[0]*3600
+        + $parts_time[1]*60
+        + $parts_time[2];
+    # reformat the date portion of the string
+    my $dateStr      = join("", @parts_date);
+    my $takenTime    = Time::Piece->strptime($f->{"taken"}, "%Y:%m:%d  %T");
+    my $shortDateStr = substr($parts_date[0], -2)
+        .encode_base26($takenTime->yday, 3)
+        ;
+    my $secSerialStr = encode_base26($secondsTotal.substr($f->{"strIdInfo"}, -4), 7);
+
+    my %formatName;
+    $formatName{'long'} = $dateStr
+        .'-'.$secSerialStr
+        .'-'.encode_base26($f->{"strFileNum"} =~ s/[^0-9]+//r)
+        ;
+    $formatName{'long'} = $formatName{'long'};
+
+    $formatName{'short'} = $shortDateStr
+        .'-'.encode_base26($f->{"strFileNum"} =~ s/[^0-9]+//r)
+        .(length($desc)  ? '_'.$desc : '')
+        ;
+    $formatName{'short'} = $formatName{'short'};
+    my $infoFileNum = (defined $f->{"fileNumber"} && length($f->{"fileNumber"}))
+        ? $f->{"fileNumber"}
+    : (substr($f->{"strFileNum"}, -1*length($f->{"docName"} =~ s/[^0-9]+//r)) =~ s/[_]+//r);
+    $formatName{'info'} = encode_base26(substr($f->{"strIdInfo"}, -4), 3)
+        .'-'.$dateStr
+        .'-'.encode_base26($secondsTotal, 4)
+        .'-'.encode_base26($f->{"strFileNum"} =~ s/[^0-9]+//r)
+        .'-'.$infoFileNum
+        .((length($desc)) ? '_'.$desc : '')
+        ;
+    $formatName{'info'} = $formatName{'info'};
+    $formatName{'canon'} = 'IMG_'.substr($f->{"strFileNum"}, -4);
+
+    my $newName = defined $formatName{$format} ? $formatName{$format} : $f->{"baseName"};
+    my $subDir = "";
+    foreach my $ext (@orgExt) {
+        if(lc($f->{"extension"}) eq '.'.lc($ext)) {
+            $subDir = $ext;
         }
-        if($desc_index > 0 ) {
-            $desc = substr($f->{"baseName"}, $desc_index+1);
+    }
+
+    if(length($subDir)) {
+        my $subPath = File::Spec->catdir($pwd, $subDir);
+        if(!-d $subPath) {
+            mkdir $subPath or die "Failed to create path: $subPath";
         }
-        my @partsTaken = split(' ', $f->{"taken"});
-        my @parts_date = split(':', $partsTaken[0]);
-        my @parts_time = split(':', $partsTaken[1]);
+    }
 
-        # convert hours and min to seconds
-        my $secondsTotal = $parts_time[0]*3600
-            + $parts_time[1]*60
-            + $parts_time[2];
-        # reformat the date portion of the string
-        my $dateStr      = join("", @parts_date);
-        my $takenTime    = Time::Piece->strptime($f->{"taken"}, "%Y:%m:%d  %T");
-        my $shortDateStr = substr($parts_date[0], -2)
-            .encode_base26($takenTime->yday, 3)
-            ;
-        my $secSerialStr = encode_base26($secondsTotal.substr($f->{"strIdInfo"}, -4), 7);
+    my $currPath = File::Spec->catdir($pwd, $f->{'file'});
+    my $newPath  = File::Spec->catdir($pwd, $subDir, $newName).$f->{"extension"};
 
-        my %formatName;
-        $formatName{'long'} = $dateStr
-            .'-'.$secSerialStr
-            .'-'.encode_base26($f->{"strFileNum"} =~ s/[^0-9]+//r)
-            ;
-        $formatName{'long'} = $formatName{'long'};
+    if($verbose) {
+        print "$currPath => $newPath\n";
+    }
 
-        $formatName{'short'} = $shortDateStr
-            .'-'.encode_base26($f->{"strFileNum"} =~ s/[^0-9]+//r)
-            .(length($desc)  ? '_'.$desc : '')
-            ;
-        $formatName{'short'} = $formatName{'short'};
-        my $infoFileNum = (defined $f->{"fileNumber"} && length($f->{"fileNumber"}))
-            ? $f->{"fileNumber"}
-            : (substr($f->{"strFileNum"}, -1*length($f->{"docName"} =~ s/[^0-9]+//r)) =~ s/[_]+//r);
-        $formatName{'info'} = encode_base26(substr($f->{"strIdInfo"}, -4), 3)
-            .'-'.$dateStr
-            .'-'.encode_base26($secondsTotal, 4)
-            .'-'.encode_base26($f->{"strFileNum"} =~ s/[^0-9]+//r)
-            .'-'.$infoFileNum
-            .((length($desc)) ? '_'.$desc : '')
-            ;
-        $formatName{'info'} = $formatName{'info'};
-        $formatName{'canon'} = 'IMG_'.substr($f->{"strFileNum"}, -4);
-
-        my $newName = defined $formatName{$format} ? $formatName{$format} : $f->{"baseName"};
-        my $subDir = "";
-        foreach my $ext ($organizeExt) {
-            if(lc($f->{"extension"}) eq '.'.lc($ext)) {
-                $subDir = $ext;
-            }
-        }
-
-        if(length($subDir)) {
-            my $subPath = File::Spec->catdir($pwd, $subDir);
-            if(!-d $subPath) {
-                mkdir $subPath or die "Failed to create path: $subPath";
-            }
-        }
-
-        my $currPath = File::Spec->catdir($pwd, $f->{'file'});
-        my $newPath  = File::Spec->catdir($pwd, $subDir, $newName).$f->{"extension"};
-
-        if($verbose) {
-            print "$currPath => $newPath\n";
-        }
-
-        if($currPath eq $newPath) {
-            return (0, $newPath);
-        } elsif (move($currPath, $newPath)) {
-            return (1, $newPath);
-        } else {
-            return (-1, $newPath);
-        }
+    if($currPath eq $newPath) {
+        return (0, $newPath);
+    } elsif (move($currPath, $newPath)) {
+        return (1, $newPath);
+    } else {
+        return (-1, $newPath);
+    }
 }
 
 my $dataDir = File::Spec->catdir(File::HomeDir->my_data, 'photo_rename');
@@ -257,7 +257,7 @@ if(length($serialArg26)) {
     $serialArg10 = decode_base26($serialArg26);
 }
 
-my $organizeExt   = split(',', $argOrganize);
+my @organizeExt   = split(',', $argOrganize);
 my $count_success = 0;
 my $count_fail    = 0;
 my $count_skip    = 0;
@@ -355,7 +355,7 @@ for(my $i=0; $i<$n_photos; $i++) {
             $f,
             $pwd, 
             $format, 
-            $organizeExt,
+            @organizeExt,
             $descArg, 
             $serialArg10, 
             $serialArg26
