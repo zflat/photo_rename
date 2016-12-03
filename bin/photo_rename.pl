@@ -263,13 +263,20 @@ my $count_fail    = 0;
 my $count_skip    = 0;
 my $count_ignore  = 0;
 
-opendir (DIR, $pwd) or die $!;
-
 $log->info("Running in current directory: $pwd, selected format: $format");
 
+opendir (DIR, $pwd) or die $!;
+my @dirFiles = grep { (!/^\./)} readdir(DIR);
+closedir(DIR);
 my @photoFiles;
 
-while (my $file = readdir(DIR)) {
+my $next_update = 0;
+my $n_dirFiles = scalar(@dirFiles);
+my $progressExif = Term::ProgressBar->new({name => 'Reding EXIF',
+                                           count => $n_dirFiles,
+                                      });
+for(my $i=0; $i<$n_dirFiles; $i++) {
+    my $file = $dirFiles[$i];
     my ($baseName, $parentDir, $extension) = fileparse($file, qr/\.[^.]*$/);
     my %f=(
         file      => $file,
@@ -330,16 +337,15 @@ while (my $file = readdir(DIR)) {
     if($hasEXIF && length($f{"strFileNum"}) && length($f{"strIdInfo"})) {
         push @photoFiles, \%f;
     }
+    $next_update = $progressExif->update($i) if $i > $next_update;
 }
-closedir(DIR);
+$progressExif->update($n_dirFiles) if $n_dirFiles >= $next_update;
 
 my $n_photos = scalar(@photoFiles);
-my $progress = Term::ProgressBar->new({name => 'Renaming photos',
+my $progressPhoto = Term::ProgressBar->new({name => 'Renaming photos',
                                        count => $n_photos,
-                                       ETA => 'linear',
                                       });
-$progress->max_update_rate(1);
-my $next_update = 0;
+$next_update = 0;
 for(my $i=0; $i<$n_photos; $i++) {
     my $f = $photoFiles[$i];
     my $hasEXIF = length($f->{"taken"});
@@ -372,9 +378,9 @@ for(my $i=0; $i<$n_photos; $i++) {
         $count_ignore++;
     }
 
-    $next_update = $progress->update($i) if $i > $next_update;
+    $next_update = $progressPhoto->update($i) if $i > $next_update;
 }
-$progress->update($n_photos) if $n_photos >= $next_update;
+$progressPhoto->update($n_photos) if $n_photos >= $next_update;
 my $n_files = $count_success+$count_fail+$count_skip;
 print "Files Renamed  : ".$count_success,"\n";
 print "Files Skipped  : ".$count_skip,"\n";
