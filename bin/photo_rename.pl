@@ -68,10 +68,11 @@ my $argOrganize = "";
 my $descArg     = "";
 my $serialArg10 = "";
 my $serialArg26 = "";
+my $argDateNow  = "";
 
 sub renamePhoto {
-    my ($f, $pwd, $format, @orgExt, $descArg, $serialArg10, $serialArg26) = @_;
-    my $desc = (length($descArg) > 0) ? $descArg : "";
+    my ($f, $pwd, $format, $descArg, $serialArg10, $serialArg26, @orgExt) = @_;
+    my $desc = $descArg && (length($descArg) > 0) ? $descArg : "";
     my $desc_index = index($f->{"baseName"}, "_", 0);
     if($desc_index < 8) {
         $desc_index = index($f->{"baseName"}, "_", $desc_index+1);
@@ -222,6 +223,7 @@ GetOptions (
     'f|format=s'      => \$format,
     'serial10=s'      => \$serialArg10,
     'serial26=s'      => \$serialArg26,
+    'date-now'        => \$argDateNow,
     'v|verbose'       => \$verbose,
     '-h|help'         => \$showHelp,
     'man'             => \$showMan,
@@ -229,7 +231,8 @@ GetOptions (
     'd|description=s'	=> \$descArg,
     'o|organize=s'    => \$argOrganize,
     ) or pod2usage(2);
-
+print "DescArg: $descArg\n";
+    
 if($showAbout) {
     print "photo_rename  Copyright (C) 2016  William Wedler\n";
     print "This program comes with ABSOLUTELY NO WARRANTY;\n";
@@ -255,6 +258,10 @@ if(!$format || !length($format)) {
 
 if(length($serialArg26)) {
     $serialArg10 = decode_base26($serialArg26);
+    if($verbose) {
+        print "Serial base 10: $serialArg10\n";
+    }
+    $log->info("Serial base 10: $serialArg10\n");
 }
 
 my @organizeExt   = split(',', $argOrganize);
@@ -265,6 +272,7 @@ my $count_ignore  = 0;
 
 $log->info("Running in current directory: $pwd, selected format: $format");
 
+# read directory contents into an array
 opendir (DIR, $pwd) or die $!;
 my @dirFiles = grep { (!/^\./)} readdir(DIR);
 closedir(DIR);
@@ -284,15 +292,12 @@ for(my $i=0; $i<$n_dirFiles; $i++) {
         parentDir => $parentDir,
         extension => $extension
         );
-    my $fileNumber = "";
-    my $docName    = "";
-    my $serial     = "";
-    my $taken      = "";
-    my $imageID    = "";
-    my $strIdInfo  = "";
-    my $strFileNum = "";
+    my $hasEXIF = 0;
         
     if($exifTool->ExtractInfo("$file") == 1) {
+        $hasEXIF = $exifTool->GetValue('ColorSpace');
+        $hasEXIF = !!length($hasEXIF);
+
         $f{"fileNumber"} = $exifTool->GetValue('FileNumber');
         $f{"docName"}    = $exifTool->GetValue('DocumentName');
         $f{"serial"}     = $exifTool->GetValue('SerialNumber');
@@ -303,13 +308,20 @@ for(my $i=0; $i<$n_dirFiles; $i++) {
         } elsif (length($serialArg10)) {
             $f{"strIdInfo"} = $serialArg10;
         }
+
+        if((!defined $f{"taken"} || !length($f{"taken"}))
+           && $argDateNow) {
+            # override missing date taken info with the current date
+            my $tNow = localtime;
+            $f{"taken"} = $tNow->strftime('%Y:%m:%d  %T');
+        }
     }
-    my $hasEXIF = length($f{"taken"});
+
     if($hasEXIF) {
         if($verbose) {
-            print "docName: $docName\n" if defined $docName;
+            print "docName: $f{'docName'}\n" if defined $f{"docName"};
         }
-        if(!defined $docName || !length($f{"docName"})) {
+        if(!defined $f{"docName"} || !length($f{"docName"})) {
             if($verbose) {
                 print "Setting DocumentName:$file\n";
             }
@@ -332,9 +344,6 @@ for(my $i=0; $i<$n_dirFiles; $i++) {
                 $f{"strFileNum"} = $pre.$f{"strFileNum"};
             }
         }
-    }
-
-    if($hasEXIF && length($f{"strFileNum"}) && length($f{"strIdInfo"})) {
         push @photoFiles, \%f;
     }
     $next_update = $progressExif->update($i) if $i > $next_update;
@@ -348,17 +357,17 @@ my $progressPhoto = Term::ProgressBar->new({name => 'Renaming photos',
 $next_update = 0;
 for(my $i=0; $i<$n_photos; $i++) {
     my $f = $photoFiles[$i];
-    my $hasEXIF = length($f->{"taken"});
     my $currPath = File::Spec->catdir($pwd, $f->{"file"});
-    if($hasEXIF && length($f->{"strFileNum"}) && length($f->{"strIdInfo"})) {
+    if(length($f->{"strFileNum"}) && length($f->{"strIdInfo"})) {
+    
         my ($result, $newPath) = renamePhoto(
             $f,
-            $pwd, 
-            $format, 
-            @organizeExt,
+            $pwd,
+            $format,
             $descArg, 
             $serialArg10, 
-            $serialArg26
+            $serialArg26,
+            @organizeExt
             );
         $log->info("$currPath => $newPath");
         if($result == 0) {
@@ -373,7 +382,7 @@ for(my $i=0; $i<$n_photos; $i++) {
             $log->logwarn("Could not rename file ".$currPath);
             $count_fail++;
         }
-    } elsif ( $hasEXIF) {
+    } else {
         $log->logwarn("Ignoring file ".$f->{"file"}." due to incomplete exif data.");
         $count_ignore++;
     }
@@ -409,11 +418,15 @@ Format as 'short', 'info', 'long', 'canon'
 
 =item B<--serial10>=[value]
 
-Manually specify camera serial number containing digits 0-9 only (base 10 encoding).
+Manually specify camera serial number containing digits 0-9 only (base 10 encoding). The last 4 digits are used.
 
 =item B<--serial26>=[value]
 
-Manually specify camera serial number containing letters and numbers (base 26 encoding).
+Manually specify camera serial number containing letters and numbers (base 26 encoding). The last 4 digits are used after converting to base 10.
+
+=item B<--date-now>
+
+Use the current date if the date taken is not saved in the EXIF data.
 
 =item -d B<--description>=[value]
 
