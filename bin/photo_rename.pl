@@ -20,6 +20,7 @@
 use constant VERSION => "0.2.0";
 use 5.022;
 use strict;
+use Try::Tiny;
 use arybase;
 use Getopt::Long;
 use Pod::Usage;
@@ -68,7 +69,7 @@ my $argOrganize = "";
 my $descArg     = "";
 my $serialArg10 = "";
 my $serialArg26 = "";
-my $argDateNow  = "";
+my $argDate     = "";
 
 sub renamePhoto {
     my ($f, $pwd, $format, $descArg, $serialArg10, $serialArg26, @orgExt) = @_;
@@ -223,7 +224,7 @@ GetOptions (
     'f|format=s'      => \$format,
     'serial10=s'      => \$serialArg10,
     'serial26=s'      => \$serialArg26,
-    'date-now'        => \$argDateNow,
+    'date=s'          => \$argDate,
     'v|verbose'       => \$verbose,
     '-h|help'         => \$showHelp,
     'man'             => \$showMan,
@@ -231,7 +232,6 @@ GetOptions (
     'd|description=s'	=> \$descArg,
     'o|organize=s'    => \$argOrganize,
     ) or pod2usage(2);
-print "DescArg: $descArg\n";
     
 if($showAbout) {
     print "photo_rename  Copyright (C) 2016  William Wedler\n";
@@ -263,6 +263,22 @@ if(length($serialArg26)) {
     }
     $log->info("Serial base 10: $serialArg10\n");
 }
+
+if(length($argDate)) {
+    # verify that the date has the correct format
+    try {
+        my $dateParsed = Time::Piece->strptime($argDate, "%Y:%m:%d  %T");
+        if( !length($dateParsed->day)) {
+            print "Invalid date argument\n";
+            exit(1);
+        }
+    } catch {
+        print "Invalid date argument\n";
+        exit(1);
+    }
+}
+            
+
 
 my @organizeExt   = split(',', $argOrganize);
 my $count_success = 0;
@@ -310,10 +326,9 @@ for(my $i=0; $i<$n_dirFiles; $i++) {
         }
 
         if((!defined $f{"taken"} || !length($f{"taken"}))
-           && $argDateNow) {
-            # override missing date taken info with the current date
-            my $tNow = localtime;
-            $f{"taken"} = $tNow->strftime('%Y:%m:%d  %T');
+           && length($argDate)) {
+            # override missing date taken info with the given date
+            $f{"taken"} = $argDate;
         }
     }
 
@@ -424,9 +439,9 @@ Manually specify camera serial number containing digits 0-9 only (base 10 encodi
 
 Manually specify camera serial number containing letters and numbers (base 26 encoding). The last 4 digits are used after converting to base 10.
 
-=item B<--date-now>
+=item B<--date=[value]>
 
-Use the current date if the date taken is not saved in the EXIF data.
+Manually specify the date taken if it is not saved in the EXIF data. (YYYY:MM:DD hh:mm:ss)
 
 =item -d B<--description>=[value]
 
