@@ -65,6 +65,7 @@ my $short       = 0;
 my $long        = 0;
 my $info        = 0;
 my $format      = 0;
+my $matchArg    = 1;
 my $argOrganize = "";
 my $descArg     = "";
 my $serialArg10 = "";
@@ -72,7 +73,16 @@ my $serialArg26 = "";
 my $argDate     = "";
 
 sub renamePhoto {
-    my ($f, $pwd, $format, $descArg, $serialArg10, $serialArg26, @orgExt) = @_;
+    my (
+        $f,
+        $pwd,
+        $format,
+        $descArg,
+        $serialArg10, 
+        $serialArg26,
+        $matchArg,
+        @orgExt
+        ) = @_;
     my $desc = $descArg && (length($descArg) > 0) ? $descArg : "";
     my $desc_index = index($f->{"baseName"}, "_", 0);
     if($desc_index < 8) {
@@ -147,6 +157,20 @@ sub renamePhoto {
     if($currPath eq $newPath) {
         return (0, $newPath);
     } elsif (move($currPath, $newPath)) {
+        if($matchArg && exists $f->{'matches'}) {
+            my @matches   = $f->{'matches'};
+            my $n_matches = scalar(@matches);
+            for(my $j=0; $j<$n_matches; $j++) {
+                my $match     = $matches[$j];
+                my $mCurrPath = $currPath.$match->{'extension'};
+                my $mNewPath  = $newPath.$match->{'extension'};
+                if(!move($mCurrPath, $mNewPath)) {
+                    if($verbose) {
+                        warn("Matching $match->{'file'} not renamed");
+                    }
+                }
+            }
+        }
         return (1, $newPath);
     } else {
         return (-1, $newPath);
@@ -227,6 +251,7 @@ GetOptions (
     'date=s'          => \$argDate,
     'v|verbose'       => \$verbose,
     '-h|help'         => \$showHelp,
+    '-m|match'        => \$matchArg,
     'man'             => \$showMan,
     'about'           => \$showAbout,
     'd|description=s'	=> \$descArg,
@@ -292,10 +317,10 @@ $log->info("Running in current directory: $pwd, selected format: $format");
 opendir (DIR, $pwd) or die $!;
 my @dirFiles = grep { (!/^\./)} readdir(DIR);
 closedir(DIR);
-my @photoFiles;
+my $n_dirFiles = scalar(@dirFiles);
+my %photoFiles;
 
 my $next_update = 0;
-my $n_dirFiles = scalar(@dirFiles);
 my $progressExif = Term::ProgressBar->new({name => 'Reding EXIF',
                                            count => $n_dirFiles,
                                       });
@@ -359,19 +384,43 @@ for(my $i=0; $i<$n_dirFiles; $i++) {
                 $f{"strFileNum"} = $pre.$f{"strFileNum"};
             }
         }
-        push @photoFiles, \%f;
+        $photoFiles{$file} = \%f;
     }
     $next_update = $progressExif->update($i) if $i > $next_update;
 }
 $progressExif->update($n_dirFiles) if $n_dirFiles >= $next_update;
 
-my $n_photos = scalar(@photoFiles);
+# Scan for matching sidecar files
+for(my $i=0; $i<$n_dirFiles; $i++) {
+    my $file = $dirFiles[$i];
+    my ($baseName, $parentDir, $extension) = fileparse($file, qr/\.[^.]*$/);
+    if( exists $photoFiles{$baseName}) {
+        my %fMatch =(
+            file      => $file,
+            baseName  => $baseName,
+            parentDir => $parentDir,
+            extension => $extension
+            );
+        if(!exists $photoFiles{$baseName}->{'matches'}) {
+            $photoFiles{$baseName}->{'matches'} = (\%fMatch);
+            my @matches = $photoFiles{$baseName}->{'matches'};
+        } else {
+            my @matches = $photoFiles{$baseName}->{'matches'};
+            push @matches, \%fMatch;
+        }
+    }
+}
+
+
+my @photoFileNames = keys %photoFiles;
+my $n_photos = scalar(@photoFileNames);
 my $progressPhoto = Term::ProgressBar->new({name => 'Renaming photos',
                                        count => $n_photos,
                                       });
 $next_update = 0;
 for(my $i=0; $i<$n_photos; $i++) {
-    my $f = $photoFiles[$i];
+    my $fName = $photoFileNames[$i];
+    my $f     = $photoFiles{$fName};
     my $currPath = File::Spec->catdir($pwd, $f->{"file"});
     if(length($f->{"strFileNum"}) && length($f->{"strIdInfo"})) {
     
@@ -382,6 +431,7 @@ for(my $i=0; $i<$n_photos; $i++) {
             $descArg, 
             $serialArg10, 
             $serialArg26,
+            $matchArg,
             @organizeExt
             );
         $log->info("$currPath => $newPath");
@@ -450,6 +500,10 @@ Add a description to files that do not already have one for formats supporting d
 =item -o B<--organize>=[value]
 
 Comma separated list of file extensions to move into a subdirectory of the same name as the extension
+
+=item -m B<--match>
+
+Also rename files that contain the image file name as a prefix for the file. An example would be renaming sidecard files that have the image file name plus an extension. Defaults to 1 (true).
 
 =item -v B<--verbose>
 
