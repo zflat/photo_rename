@@ -258,9 +258,9 @@ for (my $wDelta=0; $wDelta <= $n_wDeltas; $wDelta++) {
         if($wDelta == 0) {
             print $svgFile strRadialLine(3, 25, $degSign*$degBase, $r_inner-10, $r, '#333333', 2*$r), "\n";
         } else {
-            print $svgFile strLabelNode("Δ".$wDelta, $degSign*$degBase, $r_inner-7, $r, 'font-weight:900;', 2*$r), "\n"; 
-            print $svgFile strRadialLine(2, 15, $degSign*$degBase, $r_inner-2, $r, '#333333', 2*$r);
-            print $svgFile strRadialLine(2, 15, $degSign*$degBase, $r_inner-35, $r, '#333333', 2*$r);
+            print $svgFile strLabelNode("Δ".$wDelta, $degSign*$degBase, $r_inner+5, $r, 'font-weight:900;', 2*$r), "\n"; 
+            # print $svgFile strRadialLine(2, 15, $degSign*$degBase, $r_inner-2, $r, '#333333', 2*$r);
+            print $svgFile strRadialLine(2, 25, $degSign*$degBase, $r_inner-25, $r, '#333333', 2*$r);
         }
 
 
@@ -269,7 +269,7 @@ for (my $wDelta=0; $wDelta <= $n_wDeltas; $wDelta++) {
             my $ratioVal = ($degSign>0) 
                 ? $ratio.":1"
                 : "1:".$ratio; 
-            print $svgFile strLabelNode($ratioVal, $degSign*$degBase, $r_inner-40, $r,'font-weight:700;', 2*$r), "\n";
+            print $svgFile strLabelNode($ratioVal, $degSign*$degBase, $r_inner-40, $r,'font-weight:500;', 2*$r), "\n";
         }
 
         if($wDelta == $n_wDeltas) {last;}
@@ -278,9 +278,6 @@ for (my $wDelta=0; $wDelta <= $n_wDeltas; $wDelta++) {
         print $svgFile strRadialLine(2, 15, $degSign*$deg33, $r_inner-10, $r, '#333333', 2*$r);
         print $svgFile strRadialLine(2, 25, $degSign*$deg50, $r_inner-10, $r, '#333333', 2*$r);
         print $svgFile strRadialLine(2, 15, $degSign*$deg66, $r_inner-10, $r, '#333333', 2*$r);
-        # print $svgFile strLabelNode("Δ".$lblPrefix."⅓", $degSign*$deg33, '190', '250', ''), "\n"; 
-        # print $svgFile strLabelNode("Δ".$lblPrefix."½", $degSign*$deg50, '200', '250', ''), "\n"; 
-        # print $svgFile strLabelNode("Δ".$lblPrefix."⅔", $degSign*$deg66, '190', '250', ''), "\n"; 
 
         my $incRatio33 = delta2ratio($wDelta+1/3);
         if(($incRatio33 - $ratio) > 0) {
@@ -291,11 +288,12 @@ for (my $wDelta=0; $wDelta <= $n_wDeltas; $wDelta++) {
         }
         my $incRatio50 = delta2ratio($wDelta+1/2);
         if(($incRatio50 - $ratio) > 0
-           && ($incRatio50 - $incRatio33) > 0.5) {
+           # && ($incRatio50 - $incRatio33) > 0
+            ) {
             my $ratioVal = ($degSign>0) 
                 ? $incRatio50.":1"
                 : "1:".$incRatio50; 
-            print $svgFile strLabelNode($ratioVal.":1", $degSign*$deg50, $r_inner-40, $r,'font-weight:500;', 2*$r), "\n";
+            print $svgFile strLabelNode($ratioVal, $degSign*$deg50, $r_inner-40, $r,'font-weight:500;', 2*$r), "\n";
         }
         my $incRatio66 = delta2ratio($wDelta+2/3);
         if(($incRatio66 - $ratio ) > 0
@@ -311,3 +309,16 @@ for (my $wDelta=0; $wDelta <= $n_wDeltas; $wDelta++) {
 }
 
 print $svgFile "</svg>", "\n";
+
+
+# Path for text along a circle:
+# when r = 200
+# r_small = 120
+# M r (pY-r_small)
+# A r_small r_small 0 0 1 r (pY+r_small)
+# <path id="incRatioPath"
+#       d="M 200 480
+#          A 120 120 0 0 1 200 720"
+#       style='fill:none;fill-rule:evenodd;stroke:#AAAAAA;stroke-width:2px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1' />
+#       />
+
