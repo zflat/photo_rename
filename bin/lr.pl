@@ -32,7 +32,7 @@ sub strLabelNode {
     $str = $str."<text x='0' y='20'\n";
     $str = $str."\ttext-anchor='middle' \n";
     $str = $str."\tdominant-baseline='central'\n";
-    $str = $str."\tstyle='font-family: Times New Roman; font-size: 16px; fill: #000000; ".$style."'\n";
+    $str = $str."\tstyle='font-family: Times New Roman; font-size: 14px; fill: #000000; ".$style."'\n";
     $str = $str."\ttransform='translate(0 $cY) rotate(".$degrees." ".$radius_max." ".$radius_max.") translate(".$radius_max." ".$tr_radius.")'\n";
     $str = $str.">\n";
     $str = $str.$val."\n";
@@ -119,7 +119,7 @@ my $outName = "output.svg";
 my $svgFile;
 
 # circle radius and center
-my $r = 250;
+my $r = 200;
 my $pX = $r;
 my $pY = $r;
 
@@ -157,10 +157,21 @@ print $svgFile "<circle fill='#333333' cx='$pX'  cy='$pY' r='3'></circle>","\n";
 # Drawing an arc:
 # rx, ry, x-axis-rotation, large-arc-flag, sweep-flag, x, y
 # Or just draw in incscape and copy here
-print $svgFile "<path
-     d='M 237.45137,14.604132 C 212.25902,14.455823 209.04815,35.830797 187.49383,44.859271'
-     style='fill:none;fill-rule:evenodd;stroke:#AAAAAA;stroke-width:2px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1' />", "\n";
+my $pathArg = 0;
 
+if($r == 250) {
+    $pathArg = "M 237.45137,14.604132 C 212.25902,14.455823 209.04815,35.830797 187.49383,44.859271";    
+}
+
+if($r == 200) {
+    $pathArg = "M 186.86501,17.002872 C 172.1705,16.899086 174.19659,34.924751 157.42138,40.948117";
+}
+
+if($pathArg) {
+    print $svgFile "<path
+     d='".$pathArg."'
+     style='fill:none;fill-rule:evenodd;stroke:#AAAAAA;stroke-width:2px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1' />", "\n";
+}
 
 
 for(my $wDelta=0; $wDelta < $n_wDeltas*2; $wDelta++) {
@@ -231,8 +242,9 @@ print $svgFile "<path d='M 0 20 L 18 20 L 9 0 z'
       />", "\n";
 
 
-print $svgFile strLabelNode("Lighting Ratios", 0, -20, $r, '', 2*$r);
-print $svgFile strLabelNode("Slide Chart", 0, -38, $r, '', 2*$r);
+my $title_offset = -10;
+print $svgFile strLabelNode("Lighting Ratios", 0, $title_offset, $r, '', 2*$r);
+print $svgFile strLabelNode("Slide Chart", 0, $title_offset-18, $r, '', 2*$r);
 
 for (my $wDelta=0; $wDelta <= $n_wDeltas; $wDelta++) {
     my $degBase = $inc_wDeg*$wDelta;
@@ -275,7 +287,7 @@ for (my $wDelta=0; $wDelta <= $n_wDeltas; $wDelta++) {
             my $ratioVal = ($degSign>0) 
                 ? $incRatio33.":1"
                 : "1:".$incRatio33; 
-            print $svgFile strLabelNode($ratioVal, $degSign*$deg33, $r_inner-40, $r,'font-weight:500;', 2*$r), "\n";
+            print $svgFile strLabelNode($ratioVal, $degSign*$deg33, $r_inner-15, $r,'font-weight:500;', 2*$r), "\n";
         }
         my $incRatio50 = delta2ratio($wDelta+1/2);
         if(($incRatio50 - $ratio) > 0
@@ -292,7 +304,7 @@ for (my $wDelta=0; $wDelta <= $n_wDeltas; $wDelta++) {
             my $ratioVal = ($degSign>0) 
                 ? $incRatio66.":1"
                 : "1:".$incRatio66; 
-            print $svgFile strLabelNode($ratioVal, $degSign*$deg66, $r_inner-40, $r,'font-weight:500;', 2*$r), "\n";
+            print $svgFile strLabelNode($ratioVal, $degSign*$deg66, $r_inner-15, $r,'font-weight:500;', 2*$r), "\n";
         }
 
     }
