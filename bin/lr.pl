@@ -179,13 +179,13 @@ for(my $wDelta=0; $wDelta < $n_wDeltas*2; $wDelta++) {
     # print $svgFile strRadialLine(2, 30, $deg50, 200, $r, '#AAAAAA');
     # print $svgFile strRadialLine(2, 30, $deg66, 200, $r, '#AAAAAA');
 
-    print $svgFile strLabelNode("ƒ/".$val00, $degBase, '230', $r), "\n";
+    print $svgFile strLabelNode("ƒ/".$val00, $degBase, $r-20, $r), "\n";
     if($val33 != $val50) {
-        print $svgFile strLabelNode($val33, $deg33, '230', $r), "\n";
+        print $svgFile strLabelNode($val33, $deg33, $r-20, $r), "\n";
     }
-    print $svgFile strLabelNode($val50, $deg50, '230', $r), "\n";
+    print $svgFile strLabelNode($val50, $deg50, $r-20, $r), "\n";
     if($val66 != $val50) {
-        print $svgFile strLabelNode($val66, $deg66, '230', $r), "\n";
+        print $svgFile strLabelNode($val66, $deg66, $r-20, $r), "\n";
     }
 
     my $val00D = strStop($wDelta+2*$n_wDeltas);
@@ -212,21 +212,22 @@ for(my $wDelta=0; $wDelta < $n_wDeltas*2; $wDelta++) {
 ##############
 # Inner circle
 
-$pY = 750;
+$pY = 3*$r;
+my $r_inner = $r-50;
 
 print $svgFile "<circle stroke='#AAAAAA' 
         stroke-width='2' 
         fill='#FFFFFF' 
         cx='$pX'  
         cy='$pY' 
-        r='200'>
+        r='".($r_inner)."'>
 </circle>","\n";
 print $svgFile "<circle fill='#333333' cx='$pX'  cy='$pY' r='3'></circle>","\n";
 
 
 print $svgFile "<path d='M 0 20 L 18 20 L 9 0 z' 
       fill='#333333' 
-      transform='translate(241 554)' 
+      transform='translate(".($r-9)." ".(2*$r+54).")' 
       />", "\n";
 
 
@@ -243,11 +244,11 @@ for (my $wDelta=0; $wDelta <= $n_wDeltas; $wDelta++) {
         my $degSign = ($mirror%2) ? 1 : -1;
 
         if($wDelta == 0) {
-            print $svgFile strRadialLine(3, 25, $degSign*$degBase, 190, $r, '#333333', 2*$r), "\n";
+            print $svgFile strRadialLine(3, 25, $degSign*$degBase, $r_inner-10, $r, '#333333', 2*$r), "\n";
         } else {
-            print $svgFile strLabelNode("Δ".$wDelta, $degSign*$degBase, 193, $r, 'font-weight:900;', 2*$r), "\n"; 
-            print $svgFile strRadialLine(2, 15, $degSign*$degBase, 198, $r, '#333333', 2*$r);
-            print $svgFile strRadialLine(2, 15, $degSign*$degBase, 165, $r, '#333333', 2*$r);
+            print $svgFile strLabelNode("Δ".$wDelta, $degSign*$degBase, $r_inner-7, $r, 'font-weight:900;', 2*$r), "\n"; 
+            print $svgFile strRadialLine(2, 15, $degSign*$degBase, $r_inner-2, $r, '#333333', 2*$r);
+            print $svgFile strRadialLine(2, 15, $degSign*$degBase, $r_inner-35, $r, '#333333', 2*$r);
         }
 
 
@@ -256,15 +257,15 @@ for (my $wDelta=0; $wDelta <= $n_wDeltas; $wDelta++) {
             my $ratioVal = ($degSign>0) 
                 ? $ratio.":1"
                 : "1:".$ratio; 
-            print $svgFile strLabelNode($ratioVal, $degSign*$degBase, '160', $r,'font-weight:700;', 2*$r), "\n";
+            print $svgFile strLabelNode($ratioVal, $degSign*$degBase, $r_inner-40, $r,'font-weight:700;', 2*$r), "\n";
         }
 
         if($wDelta == $n_wDeltas) {last;}
 
         my $lblPrefix = ($wDelta ? $wDelta : "");
-        print $svgFile strRadialLine(2, 15, $degSign*$deg33, 190, $r, '#333333', 2*$r);
-        print $svgFile strRadialLine(2, 25, $degSign*$deg50, 190, $r, '#333333', 2*$r);
-        print $svgFile strRadialLine(2, 15, $degSign*$deg66, 190, $r, '#333333', 2*$r);
+        print $svgFile strRadialLine(2, 15, $degSign*$deg33, $r_inner-10, $r, '#333333', 2*$r);
+        print $svgFile strRadialLine(2, 25, $degSign*$deg50, $r_inner-10, $r, '#333333', 2*$r);
+        print $svgFile strRadialLine(2, 15, $degSign*$deg66, $r_inner-10, $r, '#333333', 2*$r);
         # print $svgFile strLabelNode("Δ".$lblPrefix."⅓", $degSign*$deg33, '190', '250', ''), "\n"; 
         # print $svgFile strLabelNode("Δ".$lblPrefix."½", $degSign*$deg50, '200', '250', ''), "\n"; 
         # print $svgFile strLabelNode("Δ".$lblPrefix."⅔", $degSign*$deg66, '190', '250', ''), "\n"; 
@@ -274,7 +275,7 @@ for (my $wDelta=0; $wDelta <= $n_wDeltas; $wDelta++) {
             my $ratioVal = ($degSign>0) 
                 ? $incRatio33.":1"
                 : "1:".$incRatio33; 
-            print $svgFile strLabelNode($ratioVal, $degSign*$deg33, '160', $r,'font-weight:500;', 2*$r), "\n";
+            print $svgFile strLabelNode($ratioVal, $degSign*$deg33, $r_inner-40, $r,'font-weight:500;', 2*$r), "\n";
         }
         my $incRatio50 = delta2ratio($wDelta+1/2);
         if(($incRatio50 - $ratio) > 0
@@ -282,7 +283,7 @@ for (my $wDelta=0; $wDelta <= $n_wDeltas; $wDelta++) {
             my $ratioVal = ($degSign>0) 
                 ? $incRatio50.":1"
                 : "1:".$incRatio50; 
-            print $svgFile strLabelNode($ratioVal.":1", $degSign*$deg50, '160', $r,'font-weight:500;', 2*$r), "\n";
+            print $svgFile strLabelNode($ratioVal.":1", $degSign*$deg50, $r_inner-40, $r,'font-weight:500;', 2*$r), "\n";
         }
         my $incRatio66 = delta2ratio($wDelta+2/3);
         if(($incRatio66 - $ratio ) > 0
@@ -291,7 +292,7 @@ for (my $wDelta=0; $wDelta <= $n_wDeltas; $wDelta++) {
             my $ratioVal = ($degSign>0) 
                 ? $incRatio66.":1"
                 : "1:".$incRatio66; 
-            print $svgFile strLabelNode($ratioVal, $degSign*$deg66, '160', $r,'font-weight:500;', 2*$r), "\n";
+            print $svgFile strLabelNode($ratioVal, $degSign*$deg66, $r_inner-40, $r,'font-weight:500;', 2*$r), "\n";
         }
 
     }
