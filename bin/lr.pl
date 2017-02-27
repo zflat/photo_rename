@@ -135,8 +135,8 @@ my $inc_wDeg = 360.0/$n_wIncrements;
 
 open $svgFile, ">", $outName or die $!;
 print $svgFile "<!DOCTYPE svg PUBLIC '-//W3C//DTD SVG 1.1//EN' 'http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd'>", "\n";
-print $svgFile "<svg xmlns='http://www.w3.org/2000/svg' width='500' height='1000'>", "\n";
-print $svgFile "<rect fill='#FFFFFF' width='500' height='10000'></rect>","\n";
+print $svgFile "<svg xmlns='http://www.w3.org/2000/svg' width='".(2*$r)."' height='".(4*$r)."'>", "\n";
+print $svgFile "<rect fill='#FFFFFF' width='".(2*$r)."' height='".(4*$r)."'></rect>","\n";
 
 ##############
 # Outer circle
