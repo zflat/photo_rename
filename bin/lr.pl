@@ -18,6 +18,9 @@
 # NOTES:
 # For further inspiration: http://www.brayebrookobservatory.org/BrayObsWebSite/HOMEPAGE/PHOTO_EXP_CALC_HIST.html
 # Math symbols: http://sites.psu.edu/symbolcodes/accents/math/mathchart/
+# Materials to consider:
+#   - PETG-CLEAR-PLASTIC-SHEET
+#   - Polyethylene-Terephthlate-Glycol-Modified-Transparent-Tolerance
         
 use constant VERSION => "0.1.0";
 use 5.022;
