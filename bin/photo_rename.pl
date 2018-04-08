@@ -38,6 +38,7 @@ use Log::Log4perl qw(get_logger);
 use Term::ProgressBar;
 use FindBin;
 use lib "$FindBin::RealBin/../lib";
+use Digest::SHA1  qw(sha1_hex);
 
 sub encode_base26 {
     my ($val, $padding) = @_;
@@ -51,6 +52,13 @@ sub encode_base26 {
 sub decode_base26 {
     my $val = uc(shift);
     my $num = new Math::Fleximal($val, ["A".."Z"]);
+    if(length($num->to_str()) != length($val)) {
+        my $val_hashed = uc(sha1_hex($val));
+        $num = new Math::Fleximal($val_hashed, [0..9,"A".."F"]);
+        warn("Value ".$val
+             ." not in base26 form. Hashed to "
+             .$val_hashed." and decoded as base16");
+    }
     my $retVal = $num->change_flex([0..9])->to_str();
     return $retVal;
 }
