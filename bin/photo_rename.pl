@@ -457,6 +457,13 @@ for(my $i=0; $i<$n_photos; $i++) {
         }
     } else {
         $log->logwarn("Ignoring file ".$f->{"file"}." due to incomplete exif data.");
+        if(!length($f->{"strFileNum"})) {
+            $log->logwarn("Missing file num from exif data");
+        } 
+        if(!length($f->{"strIdInfo"})) {
+            $log->logwarn("Missing ID info from exif data.");     
+        }
+
         $count_ignore++;
     }
 
