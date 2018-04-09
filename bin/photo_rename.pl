@@ -246,7 +246,7 @@ if($logStat[7] > 1e6) {
             );
     }
     # move the current log to the next available number
-    my $nextLogN = $maxLogN+1;
+    my $nextLogN = sprintf("%4d", ($maxLogN+1));
     move(File::Spec->catdir(
              $dataDir, 
              "$logName.log"),
