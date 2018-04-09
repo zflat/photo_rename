@@ -17,7 +17,7 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-use constant VERSION => "0.2.0";
+use constant VERSION => "0.3.0";
 use 5.022;
 use strict;
 use Try::Tiny;
@@ -52,13 +52,33 @@ sub encode_base26 {
 sub decode_base26 {
     my $val = uc(shift);
     my $num = new Math::Fleximal($val, ["A".."Z"]);
-    if(length($num->to_str()) != length($val)) {
-        my $val_hashed = uc(sha1_hex($val));
-        $num = new Math::Fleximal($val_hashed, [0..9,"A".."F"]);
-        warn("Value ".$val
-             ." not in base26 form. Hashed to "
-             .$val_hashed." and decoded as base16");
+    my $retVal = $num->change_flex([0..9])->to_str();
+    return $retVal;
+}
+
+sub decode_serial {
+    my $val = uc(shift);
+    my $num = 0;
+
+    if($val =~ /^[0-9]+$/) {
+        # base 10
+        return $val;
+    } 
+
+    if($val =~ /^[A-Z]+$/) {
+        # base 26
+        $num = new Math::Fleximal($val, ["A".."Z"]);
+    } elsif($val =~ /^[0-9A-F]+$/) {
+        # base 16
+        $num = new Math::Fleximal($val, [0..9,"A".."F"]);
     }
+
+    if(!$num) {
+        # fallback to handle any other encoding
+        my $hashed = uc(sha1_hex($val));
+        $num = new Math::Fleximal($hashed, [0..9,"A".."F"]);
+    }
+
     my $retVal = $num->change_flex([0..9])->to_str();
     return $retVal;
 }
@@ -76,8 +96,8 @@ my $format      = 0;
 my $matchArg    = 1;
 my $argOrganize = "";
 my $descArg     = "";
+my $serialArg   = "";
 my $serialArg10 = "";
-my $serialArg26 = "";
 my $argDate     = "";
 
 sub renamePhoto {
@@ -87,7 +107,6 @@ sub renamePhoto {
         $format,
         $descArg,
         $serialArg10, 
-        $serialArg26,
         $matchArg,
         @orgExt
         ) = @_;
@@ -254,8 +273,7 @@ my $log = Log::Log4perl->get_logger("PhotoRename");
 Getopt::Long::Configure ('bundling');
 GetOptions (
     'f|format=s'      => \$format,
-    'serial10=s'      => \$serialArg10,
-    'serial26=s'      => \$serialArg26,
+    's|serial=s'      => \$serialArg,
     'date=s'          => \$argDate,
     'v|verbose'       => \$verbose,
     '-h|help'         => \$showHelp,
@@ -289,8 +307,8 @@ if(!$format || !length($format)) {
     exit 1;
 }
 
-if(length($serialArg26)) {
-    $serialArg10 = decode_base26($serialArg26);
+if(length($serialArg)) {
+    $serialArg10 = decode_serial($serialArg);
     if($verbose) {
         print "Serial base 10: $serialArg10\n";
     }
@@ -438,7 +456,6 @@ for(my $i=0; $i<$n_photos; $i++) {
             $format,
             $descArg, 
             $serialArg10, 
-            $serialArg26,
             $matchArg,
             @organizeExt
             );
@@ -496,15 +513,11 @@ photo_rename [options]
 
 Format as 'short', 'info', 'long', 'canon'
 
-=item B<--serial10>=[value]
+=item -s B<--serial>=[value]
 
-Manually specify camera serial number containing digits 0-9 only (base 10 encoding). The last 4 digits are used.
+Manually specify the camera serial number. The last 4 digits are used after converting to base 10. Converts from (in order of priority) base 16, base 26, or base 16 of the SHA1 hash of B<value>.
 
-=item B<--serial26>=[value]
-
-Manually specify camera serial number containing letters and numbers (base 26 encoding). The last 4 digits are used after converting to base 10.
-
-=item B<--date=[value]>
+=item B<--date>=[value]
 
 Manually specify the date taken if it is not saved in the EXIF data. (YYYY:MM:DD hh:mm:ss)
 
@@ -535,7 +548,7 @@ Prints the manual page and exits.
 
 =item B<--about>
 
-Prints information about the program including version number and copywrite.
+Prints information about the program including version number and copyright.
 
 =back
 
@@ -546,7 +559,7 @@ Rename photos in the current working directory with new file names based on exif
 
 =head2 Formats
 
-=head3 long
+=head3 "long"
 
                           YYYYMMDD-xxxxxxx-nnnnn.ext
                           \__/|/|/ \_____/ \___/ \_/
@@ -558,7 +571,7 @@ number (base 26 encoded)                     |    |
    File number (base 26) ____________________|    |
                Extension _________________________|
 
-=head3 short
+=head3 "short"
 
                          YYddd-fffff_*.ext
                          |/\_/ \___/\| \_/
@@ -570,7 +583,7 @@ File number (base 26) ___________|   |  |
             Extension __________________|
 
 
-=head3 info
+=head3 "info"
 
         sss-YYYYMMDD-tttt-ffff-FFFF_*.ext
         \_/ \__/|/|/ \__/ \__/ \__/\| \_/
@@ -595,7 +608,7 @@ desc.                                  |
                                        |
 Extn. _________________________________|
 
-=head3 canon
+=head3 "canon"
 
                  IMG_nnnn_*.ext
                  \__/\__/|/ \_/
