@@ -132,7 +132,7 @@ sub renamePhoto {
     my $shortDateStr = substr($parts_date[0], -2)
         .encode_base26($takenTime->yday, 3)
         ;
-    my $secSerialStr = encode_base26($secondsTotal.substr($f->{"strIdInfo"}, -4), 7);
+    my $secSerialStr = encode_base26($secondsTotal . substr($f->{"strIdInfo"}, -4), 7);
 
     my %formatName;
     $formatName{'long'} = $dateStr
@@ -362,8 +362,8 @@ for(my $i=0; $i<$n_dirFiles; $i++) {
     my $hasEXIF = 0;
         
     if($exifTool->ExtractInfo("$file") == 1) {
-        $hasEXIF = $exifTool->GetValue('ColorSpace');
-        $hasEXIF = !!length($hasEXIF);
+        $hasEXIF = !!length($exifTool->GetValue('ColorSpace'))
+            || !!length($exifTool->GetValue('ImageSize'));
 
         $f{"fileNumber"} = $exifTool->GetValue('FileNumber');
         $f{"docName"}    = $exifTool->GetValue('DocumentName');
@@ -374,12 +374,19 @@ for(my $i=0; $i<$n_dirFiles; $i++) {
             $f{"strIdInfo"} = $f{"serial"};
         } elsif (length($serialArg10)) {
             $f{"strIdInfo"} = $serialArg10;
+        } else {
+            $log->warn("No ID information found or provided for file ".$file);
         }
+        $f{"completeEXIF"} = !!length($f{"strIdInfo"});
 
-        if((!defined $f{"taken"} || !length($f{"taken"}))
-           && length($argDate)) {
+        if((!defined $f{"taken"} || !length($f{"taken"}))) {
             # override missing date taken info with the given date
-            $f{"taken"} = $argDate;
+            if(length($argDate)) {
+                $f{"taken"} =  $argDate;
+            } else {
+                $log->warn("No date taken information found or provided for file ".$file);
+                $f{"completeEXIF"} = 0;
+            }
         }
     }
 
@@ -410,6 +417,7 @@ for(my $i=0; $i<$n_dirFiles; $i++) {
                 $f{"strFileNum"} = $pre.$f{"strFileNum"};
             }
         }
+        $f{"completeEXIF"} = $f{"completeEXIF"} && !!length($f{"strFileNum"});
         $photoFiles{$file} = \%f;
     }
     $next_update = $progressExif->update($i) if $i > $next_update;
@@ -448,8 +456,7 @@ for(my $i=0; $i<$n_photos; $i++) {
     my $fName = $photoFileNames[$i];
     my $f     = $photoFiles{$fName};
     my $currPath = File::Spec->catdir($pwd, $f->{"file"});
-    if(length($f->{"strFileNum"}) && length($f->{"strIdInfo"})) {
-    
+    if($f->{"completeEXIF"}) {
         my ($result, $newPath) = renamePhoto(
             $f,
             $pwd,
