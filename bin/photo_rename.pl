@@ -99,6 +99,7 @@ my $descArg     = "";
 my $serialArg   = "";
 my $serialArg10 = "";
 my $argDate     = "";
+my $argTags     = "";
 
 sub renamePhoto {
     my (
@@ -282,6 +283,7 @@ GetOptions (
     'about'           => \$showAbout,
     'd|description=s'	=> \$descArg,
     'o|organize=s'    => \$argOrganize,
+    't|tags=s'        => \$argTags,
     ) or pod2usage(2);
     
 if($showAbout) {
@@ -332,6 +334,7 @@ if(length($argDate)) {
 
 
 my @organizeExt   = split(',', $argOrganize);
+my @keywordsArr   = split(',', $argTags);
 my $count_success = 0;
 my $count_fail    = 0;
 my $count_skip    = 0;
@@ -393,6 +396,19 @@ for(my $i=0; $i<$n_dirFiles; $i++) {
     if($hasEXIF) {
         if($verbose) {
             print "docName: $f{'docName'}\n" if defined $f{"docName"};
+        }
+        # Write keywords to the photo file
+        if( scalar @keywordsArr ) {
+            my @keywords0 = $exifTool->GetValue('Keywords', 'ValueConv');
+            my %seen;
+            my @keywords1 = grep( !$seen{$_}++, @keywords0, @keywordsArr);
+            $exifTool->SetNewValue(Keywords => '', AddValue => 0);
+            $exifTool->WriteInfo($file);
+            $exifTool->SetNewValue();
+            foreach my $tag (@keywords1) {
+                $exifTool->SetNewValue(Keywords => $tag);
+            }
+            $exifTool->WriteInfo($file);
         }
         if(!defined $f{"docName"} || !length($f{"docName"})) {
             if($verbose) {
@@ -535,6 +551,10 @@ Add a description to files that do not already have one for formats supporting d
 =item -o B<--organize>=[value]
 
 Comma separated list of file extensions to move into a subdirectory of the same name as the extension
+
+=item -t B<--tags>=[value]
+
+Comma separated list of keywords to save to the 'Keywords' EXIF data of each photo processed
 
 =item -m B<--match>
 
