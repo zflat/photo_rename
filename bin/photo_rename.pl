@@ -265,7 +265,7 @@ my %log_config = (
     "log4perl.appender.LOGFILE.filename"                 => $logPath,
     "log4perl.appender.LOGFILE.mode"                     => "append",
     "log4perl.appender.LOGFILE.layout"                   =>"PatternLayout",
-    "log4perl.appender.LOGFILE.layout.ConversionPattern" =>"%F:%L %c %d - %m%n",
+    "log4perl.appender.LOGFILE.layout.ConversionPattern" =>"%F:%L [%c] %d - %m%n",
     );
 
 Log::Log4perl->init( \%log_config);
@@ -373,12 +373,12 @@ for(my $i=0; $i<$n_dirFiles; $i++) {
         $f{"serial"}     = $exifTool->GetValue('SerialNumber');
         $f{"taken"}      = $exifTool->GetValue('DateTimeOriginal');
 
-        if(defined $f{"serial"} && length($f{"serial"})){
+        if(defined $f{"serial"} && length($f{"serial"})) {
             $f{"strIdInfo"} = $f{"serial"};
         } elsif (length($serialArg10)) {
             $f{"strIdInfo"} = $serialArg10;
         } else {
-            $log->warn("No ID information found or provided for file ".$file);
+            $log->warn("No ID information found or provided for file " . $file);
         }
         $f{"completeEXIF"} = !!length($f{"strIdInfo"});
 
@@ -501,7 +501,7 @@ for(my $i=0; $i<$n_photos; $i++) {
             $log->logwarn("Missing file num from exif data");
         } 
         if(!length($f->{"strIdInfo"})) {
-            $log->logwarn("Missing ID info from exif data.");     
+            $log->logwarn("Missing ID info (camera serial) from exif data.");
         }
 
         $count_ignore++;
@@ -538,7 +538,7 @@ Format as 'short', 'info', 'long', 'canon'
 
 =item -s B<--serial>=[value]
 
-Manually specify the camera serial number. The last 4 digits are used after converting to base 10. Converts from (in order of priority) base 16, base 26, or base 16 of the SHA1 hash of B<value>.
+Manually specify the camera serial number. The last 4 digits are used after converting to base 10 if not base 10 already. Converts from (in order of priority) base 16, base 26, or base 16 of the SHA1 hash of B<value>.
 
 =item B<--date>=[value]
 
