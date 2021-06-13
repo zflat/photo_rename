@@ -21,7 +21,6 @@ use constant VERSION => "0.3.0";
 use 5.022;
 use strict;
 use Try::Tiny;
-use arybase;
 use Getopt::Long;
 use Pod::Usage;
 use warnings;
