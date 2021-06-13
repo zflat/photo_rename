@@ -33,10 +33,12 @@ Get the description of available options
 
 ### Runtime:
 
+      sudo apt install perl-doc
       cpan DateTime File::HomeDir Image::ExifTool Log::Log4perl Math::Fleximal Time::Piece Term::ProgressBar Digest::SHA1
 
 ### Development:
 
+      sudo apt install libperl-dev
       cpan PAR::Packer
 
 
