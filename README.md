@@ -33,7 +33,7 @@ Get the description of available options
 
 ### Runtime:
 
-      cpan File::HomeDir Image::ExifTool Log::Log4perl Math::Fleximal Time::Piece Term::ProgressBar Digest::SHA1
+      cpan DateTime File::HomeDir Image::ExifTool Log::Log4perl Math::Fleximal Time::Piece Term::ProgressBar Digest::SHA1
 
 ### Development:
 
@@ -52,5 +52,3 @@ Get the description of available options
 3. Commit your changes (`git commit -am 'Add some feature'`)
 4. Push to the branch (`git push origin my-new-feature`)
 5. Create new Pull Request
-
-

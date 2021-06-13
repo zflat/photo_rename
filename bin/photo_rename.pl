@@ -213,7 +213,7 @@ if(!-d $dataDir) {
 my $logName = "photo_rename";
 my $logPath = File::Spec->catdir($dataDir, "$logName.log");
 my @logStat = stat $logPath;
-if($logStat[7] > 1e6) {
+if(scalar(@logStat) >= 7 && $logStat[7] > 1e6) {
     # Current log file is too large
 
     my $minLogN;
