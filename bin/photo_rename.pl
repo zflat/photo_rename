@@ -349,7 +349,7 @@ my $n_dirFiles = scalar(@dirFiles);
 my %photoFiles;
 
 my $next_update = 0;
-my $progressExif = Term::ProgressBar->new({name => 'Reding EXIF',
+my $progressExif = Term::ProgressBar->new({name => 'Reading EXIF',
                                            count => $n_dirFiles,
                                       });
 for(my $i=0; $i<$n_dirFiles; $i++) {
