@@ -41,7 +41,11 @@ use Digest::SHA1  qw(sha1_hex);
 
 sub encode_base26 {
     my ($val, $padding) = @_;
-    my $num = new Math::Fleximal($val, [0..9]); 
+    # Ensure the value passed only contains digits
+    # Fix for values like "20230608201337DRO"
+    # that give error "truncated in parse".
+    my $digits = $val =~ s/\D//rg;
+    my $num = new Math::Fleximal($digits, [0..9]);
     my $retVal = $num->change_flex(["A".."Z"])->to_str();
     $padding = $padding - length($retVal) if defined $padding;
     $retVal = '0' x $padding . $retVal if defined $padding && $padding > 0;
