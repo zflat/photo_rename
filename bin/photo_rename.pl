@@ -66,7 +66,7 @@ sub decode_serial {
     if($val =~ /^[0-9]+$/) {
         # base 10
         return $val;
-    } 
+    }
 
     if($val =~ /^[A-Z]+$/) {
         # base 26
@@ -110,7 +110,7 @@ sub renamePhoto {
         $pwd,
         $format,
         $descArg,
-        $serialArg10, 
+        $serialArg10,
         $matchArg,
         @orgExt
         ) = @_;
@@ -245,17 +245,17 @@ if(scalar(@logStat) >= 7 && $logStat[7] > 1e6) {
     if($logCount > 100) {
         # Too many old log files so remove the oldest log
         unlink File::Spec->catdir(
-            $dataDir, 
+            $dataDir,
             "$logName$minLogN.log"
             );
     }
     # move the current log to the next available number
     my $nextLogN = sprintf("%4d", ($maxLogN+1));
     move(File::Spec->catdir(
-             $dataDir, 
+             $dataDir,
              "$logName.log"),
          File::Spec->catdir(
-             $dataDir, 
+             $dataDir,
              "$logName$nextLogN.log"),
         );
 }
@@ -288,7 +288,7 @@ GetOptions (
     'o|organize=s'    => \$argOrganize,
     't|tags=s'        => \$argTags,
     ) or pod2usage(2);
-    
+
 if($showAbout) {
     print "photo_rename  Copyright (C) 2016  William Wedler\n";
     print "This program comes with ABSOLUTELY NO WARRANTY;\n";
@@ -333,7 +333,7 @@ if(length($argDate)) {
         exit(1);
     }
 }
-            
+
 
 
 my @organizeExt   = split(',', $argOrganize);
@@ -366,7 +366,7 @@ for(my $i=0; $i<$n_dirFiles; $i++) {
         extension => $extension
         );
     my $hasEXIF = 0;
-        
+
     if($exifTool->ExtractInfo("$file") == 1) {
         $hasEXIF = !!length($exifTool->GetValue('ColorSpace'))
             || !!length($exifTool->GetValue('ImageSize'));
@@ -480,8 +480,8 @@ for(my $i=0; $i<$n_photos; $i++) {
             $f,
             $pwd,
             $format,
-            $descArg, 
-            $serialArg10, 
+            $descArg,
+            $serialArg10,
             $matchArg,
             @organizeExt
             );
@@ -502,7 +502,7 @@ for(my $i=0; $i<$n_photos; $i++) {
         $log->logwarn("Ignoring file ".$f->{"file"}." due to incomplete exif data.");
         if(!length($f->{"strFileNum"})) {
             $log->logwarn("Missing file num from exif data");
-        } 
+        }
         if(!length($f->{"strIdInfo"})) {
             $log->logwarn("Missing ID info (camera serial) from exif data.");
         }
@@ -529,7 +529,7 @@ photo_rename - rename photos for organizing and archiving
 
 =head1 SYNOPSIS
 
-photo_rename [options] 
+photo_rename [options]
 
 =head1 OPTIONS
 
@@ -628,7 +628,7 @@ Time     _____________|    |    |   |  |
                            |    |   |  |
 File   ____________________|    |   |  |
 num.                            |   |  |
-(b26)                           |   |  | 
+(b26)                           |   |  |
                                 |   |  |
 File   _________________________|   |  |
 num.                                |  |
